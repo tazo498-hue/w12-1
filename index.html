@@ -1,0 +1,628 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Little Workshop Adventure</title>
+<style>
+:root {
+  --ink:#293a38;
+  --green:#356e61;
+  --cream:#fffaf0;
+  --paper:#ffffff;
+  --gold:#f1c77c;
+  --muted:#667773;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  background:#e8eee8;
+  color:var(--ink);
+}
+button,select {font:inherit}
+button {cursor:pointer}
+.app {
+  max-width:850px;
+  margin:20px auto;
+  padding:18px;
+}
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.brand {font-weight:800;color:var(--green)}
+.timer {font-weight:bold}
+.progress {
+  height:9px;
+  background:#d2ddd7;
+  border-radius:20px;
+  margin:15px 0;
+  overflow:hidden;
+}
+.progress div {
+  height:100%;
+  background:var(--green);
+  width:0;
+  transition:width .3s;
+}
+.book {
+  background:var(--paper);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 10px 35px #223b3020;
+  min-height:580px;
+}
+.tag {
+  font-size:13px;
+  font-weight:bold;
+  color:var(--green);
+  letter-spacing:1px;
+}
+h1 {font-size:clamp(25px,5vw,39px);margin:12px 0}
+h2 {font-size:25px}
+.art {
+  height:275px;
+  background:linear-gradient(150deg,#e3f2df,#fff1d9);
+  border-radius:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  margin:18px 0;
+}
+.art svg {
+  width:100%;
+  height:100%;
+}
+.story {
+  font-size:clamp(19px,3vw,25px);
+  line-height:1.8;
+  text-align:center;
+  max-width:620px;
+  margin:20px auto;
+}
+.word {
+  color:#a25a22;
+  font-weight:800;
+  text-decoration:underline dotted;
+  text-underline-offset:5px;
+  cursor:pointer;
+}
+.meaning {
+  background:#edf5ee;
+  border-radius:12px;
+  padding:12px;
+  text-align:center;
+  margin:12px auto;
+  max-width:550px;
+}
+.controls {
+  display:flex;
+  justify-content:center;
+  gap:9px;
+  flex-wrap:wrap;
+  margin-top:20px;
+}
+button {
+  border:0;
+  border-radius:12px;
+  padding:12px 18px;
+  font-weight:bold;
+}
+.primary {background:var(--green);color:white}
+.secondary {background:#e8efe9;color:var(--ink)}
+.gold {background:var(--gold);color:#473d29}
+button:disabled {opacity:.4;cursor:not-allowed}
+.pagecount {text-align:center;color:var(--muted);margin:12px}
+.hidden {display:none!important}
+.center {text-align:center}
+.small {font-size:14px;color:var(--muted)}
+.options {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:20px auto;
+  max-width:650px;
+}
+.option {
+  background:#f1f4ee;
+  padding:17px;
+  text-align:left;
+  border:2px solid transparent;
+}
+.option.correct {background:#d8f2df;border-color:#348653}
+.option.wrong {background:#ffe3dd;border-color:#d96752}
+.flashcards {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:9px;
+}
+.flashcard {
+  background:#f3f5ed;
+  padding:14px 7px;
+  min-height:75px;
+  border-radius:12px;
+  text-align:center;
+  font-weight:bold;
+}
+.flashcard span {display:block;color:var(--green);font-size:13px;margin-top:7px}
+footer {text-align:center;margin:15px;color:var(--muted);font-size:12px}
+@media(max-width:550px){
+  .app {padding:9px;margin:5px auto}
+  .book {padding:16px;min-height:540px}
+  .art {height:225px}
+  .options {grid-template-columns:1fr}
+  .flashcards {grid-template-columns:repeat(2,1fr)}
+  button {padding:11px 13px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">📖 English Storybook Lab</div>
+  <div class="timer" id="timer">⏱ 05:00</div>
+</header>
+<div class="progress"><div id="progress"></div></div>
+
+<main class="book">
+<section id="welcome" class="center">
+  <div class="tag">5-MINUTE ENGLISH READING</div>
+  <h1>The Little Workshop Adventure</h1>
+  <div class="art" id="coverArt"></div>
+  <p>Join Mia and Leo as they prepare a surprise festival!</p>
+  <p class="small">Read • Listen • Discover • Practice</p>
+  <p class="small">15 action verbs | CEFR A1–B2</p>
+  <div class="controls">
+    <button class="primary" onclick="startBook()">Start Reading →</button>
+  </div>
+</section>
+
+<section id="reader" class="hidden">
+  <div class="tag" id="chapter"></div>
+  <div class="art" id="illustration"></div>
+  <div class="story" id="storyText"></div>
+  <div id="meaning" class="meaning hidden" aria-live="polite"></div>
+  <div class="controls">
+    <button class="secondary" onclick="prevPage()">← Back</button>
+    <button class="secondary" onclick="speakPage()">🔊 Listen</button>
+    <button class="secondary" onclick="toggleMeaning()">🇰🇷 Meaning</button>
+    <button class="primary" onclick="nextPage()" id="nextBtn">Next →</button>
+  </div>
+  <div class="pagecount" id="pagecount"></div>
+</section>
+
+<section id="review" class="hidden">
+  <div class="tag">VOCABULARY REVIEW</div>
+  <h2>Remember the Actions!</h2>
+  <p>Tap each word to reveal its Korean meaning.</p>
+  <div class="flashcards" id="flashcards"></div>
+  <div class="controls">
+    <button class="primary" onclick="startQuiz()">Take the Quiz →</button>
+  </div>
+</section>
+
+<section id="quiz" class="hidden">
+  <div class="tag" id="quizNumber"></div>
+  <h2 id="question"></h2>
+  <div class="options" id="options"></div>
+  <p id="feedback" class="center" aria-live="polite"></p>
+  <div class="controls">
+    <button id="quizNext" class="primary hidden" onclick="nextQuestion()">Next →</button>
+  </div>
+</section>
+
+<section id="results" class="hidden center">
+  <div class="tag">STORY COMPLETED</div>
+  <h1>Great Reading! 🎉</h1>
+  <h2 id="score"></h2>
+  <p id="resultMessage"></p>
+  <div class="controls">
+    <button class="secondary" onclick="restart()">Read Again</button>
+    <button class="primary" onclick="reviewAgain()">Review Words</button>
+  </div>
+</section>
+</main>
+<footer>Original educational story • Works offline • Speech requires browser support</footer>
+</div>
+
+<script>
+"use strict";
+
+const words = [
+  ["hoist","끌어올리다"],
+  ["sift","체로 거르다"],
+  ["whittle","나무를 조금씩 깎다"],
+  ["braid","땋다"],
+  ["stoop","몸을 굽히다"],
+  ["trample","짓밟다"],
+  ["clasp","꽉 잡다"],
+  ["prod","쿡 찌르다"],
+  ["tug","세게 잡아당기다"],
+  ["clench","꽉 쥐다"],
+  ["snip","싹둑 자르다"],
+  ["crumple","구기다"],
+  ["shred","잘게 찢다"],
+  ["dab","가볍게 톡톡 두드리다"],
+  ["slouch","구부정하게 서거나 앉다"]
+];
+
+const pages = [
+  {
+    title:"A Big Surprise",
+    text:"Mia and Leo had a plan. They wanted to build a beautiful festival booth.",
+    art:"festival"
+  },
+  {
+    title:"Getting Ready",
+    text:"First, they had to <b>hoist</b> a heavy banner. Then Mia used a sieve to <b>sift</b> flour for cookies.",
+    art:"hoist"
+  },
+  {
+    title:"Making Decorations",
+    text:"Leo began to <b>whittle</b> a small wooden star. Mia decided to <b>braid</b> three colorful ribbons.",
+    art:"craft"
+  },
+  {
+    title:"A Little Trouble",
+    text:"Mia had to <b>stoop</b> to pick up a ribbon. Suddenly, Leo almost <b>trampled</b> the flowers!",
+    art:"flowers"
+  },
+  {
+    title:"Working Together",
+    text:"Mia <b>clasped</b> Leo's hand. Leo used one finger to <b>prod</b> a loose decoration.",
+    art:"hands"
+  },
+  {
+    title:"The Stuck Rope",
+    text:"They had to <b>tug</b> on a rope. Leo began to <b>clench</b> his fists because it was so difficult.",
+    art:"rope"
+  },
+  {
+    title:"Paper Magic",
+    text:"Mia used scissors to <b>snip</b> some paper. Leo accidentally <b>crumpled</b> one sheet.",
+    art:"paper"
+  },
+  {
+    title:"Finishing Touches",
+    text:"They decided to <b>shred</b> the old paper into tiny strips. Then Mia used a sponge to <b>dab</b> blue paint onto a sign.",
+    art:"paint"
+  },
+  {
+    title:"A Happy Ending",
+    text:"Leo began to <b>slouch</b> because he was tired. But when the festival opened, everyone smiled!",
+    art:"finish"
+  }
+];
+
+const questions = [
+  ["Which verb means 'to lift something heavy upward'?","hoist",["hoist","dab","stoop","shred"]],
+  ["Which verb means 'to pass powder through a sieve'?","sift",["tug","sift","clasp","snip"]],
+  ["Which verb means 'to carve wood into shape'?","whittle",["whittle","trample","braid","prod"]],
+  ["Which verb means 'to weave strands together'?","braid",["shred","clench","braid","dab"]],
+  ["Which verb means 'to bend your body downward'?","stoop",["stoop","hoist","snip","clasp"]],
+  ["Which verb means 'to step heavily on something'?","trample",["tug","trample","sift","dab"]],
+  ["Which verb means 'to hold something tightly'?","clasp",["prod","shred","clasp","slouch"]],
+  ["Which verb means 'to poke something'?","prod",["braid","prod","hoist","whittle"]],
+  ["Which verb means 'to pull something hard'?","tug",["tug","dab","stoop","sift"]],
+  ["Which verb means 'to close your fist tightly'?","clench",["snip","clench","shred","braid"]],
+  ["Which verb means 'to cut with small quick movements'?","snip",["snip","clasp","hoist","prod"]],
+  ["Which verb means 'to crush paper into wrinkles'?","crumple",["sift","crumple","tug","dab"]],
+  ["Which verb means 'to tear into small strips'?","shred",["whittle","shred","clench","stoop"]],
+  ["Which verb means 'to touch lightly and repeatedly'?","dab",["dab","trample","hoist","snip"]],
+  ["Which verb means 'to sit or stand with poor posture'?","slouch",["braid","clasp","slouch","prod"]]
+];
+
+let pageIndex=0;
+let quizIndex=0;
+let score=0;
+let answered=false;
+let timeLeft=300;
+let clock=null;
+let quizSet=[];
+
+const $=id=>document.getElementById(id);
+
+function show(id){
+  ["welcome","reader","review","quiz","results"].forEach(x=>{
+    $(x).classList.toggle("hidden",x!==id);
+  });
+}
+
+function escapeHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function drawArt(type){
+  const backgrounds={
+    festival:["#d6e8d2","#fff0cf"],
+    hoist:["#d7eaf5","#f9e6c8"],
+    craft:["#f6e3ce","#e4efda"],
+    flowers:["#d9f1d9","#f8e5cc"],
+    hands:["#e6e5f6","#fbe9d6"],
+    rope:["#dceaf4","#f7e2cb"],
+    paper:["#f4e6d8","#e2edfa"],
+    paint:["#e3eaf9","#f9e2d5"],
+    finish:["#fce6ba","#d9efd8"]
+  };
+  const colors=backgrounds[type]||backgrounds.festival;
+
+  const symbols={
+    festival:`
+      <rect x="100" y="85" width="400" height="190" rx="12" fill="#fffaf0"/>
+      <path d="M90 105 L300 30 L510 105Z" fill="#e6a16c"/>
+      <path d="M150 125 H450" stroke="#5a8e78" stroke-width="12"/>
+      <text x="300" y="190" font-size="34" text-anchor="middle" fill="#477363">FESTIVAL</text>
+      <circle cx="150" cy="55" r="13" fill="#edbb66"/>
+      <circle cx="450" cy="55" r="13" fill="#df8b86"/>`,
+    hoist:`
+      <rect x="130" y="95" width="340" height="105" rx="12" fill="#fffaf0" stroke="#6c927b" stroke-width="7"/>
+      <text x="300" y="155" font-size="30" text-anchor="middle" fill="#477363">WELCOME!</text>
+      <path d="M150 95 V35 M450 95 V35" stroke="#8d6c4c" stroke-width="6"/>
+      <path d="M150 35 L115 80 M450 35 L485 80" stroke="#8d6c4c" stroke-width="4"/>
+      <circle cx="300" cy="248" r="33" fill="#f0c3a0"/>
+      <path d="M265 300 Q300 250 335 300" fill="#75a995"/>`,
+    craft:`
+      <path d="M135 240 L235 75 L260 92 L165 260Z" fill="#b88858"/>
+      <path d="M240 85 L275 55 L290 70 L255 103Z" fill="#d5b18a"/>
+      <path d="M340 55 Q260 120 340 185 T340 270" fill="none" stroke="#d77e88" stroke-width="14"/>
+      <path d="M380 55 Q460 120 380 185 T380 270" fill="none" stroke="#6e9ac4" stroke-width="14"/>
+      <path d="M360 55 V270" stroke="#e2b964" stroke-width="14"/>`,
+    flowers:`
+      <path d="M80 255 H520" stroke="#7da88c" stroke-width="12"/>
+      ${[160,300,440].map((x,i)=>`
+        <path d="M${x} 255 V145" stroke="#65926c" stroke-width="7"/>
+        <circle cx="${x}" cy="135" r="28" fill="${["#eaa2a2","#e5c26c","#b4a0d8"][i]}"/>
+        <circle cx="${x}" cy="135" r="11" fill="#fff0bd"/>`).join("")}
+      <path d="M60 75 Q160 10 220 90" fill="none" stroke="#6e827e" stroke-width="15"/>`,
+    hands:`
+      <path d="M80 240 Q150 160 225 180 L300 220 L375 180 Q450 160 520 240"
+        fill="none" stroke="#e6b58f" stroke-width="52" stroke-linecap="round"/>
+      <circle cx="300" cy="205" r="34" fill="#e6b58f"/>
+      <path d="M300 110 V55" stroke="#7e9d8c" stroke-width="10"/>
+      <circle cx="300" cy="40" r="15" fill="#e4ae65"/>`,
+    rope:`
+      <path d="M45 170 Q150 90 300 170 T555 170"
+        fill="none" stroke="#b68b5b" stroke-width="17" stroke-linecap="round"/>
+      <path d="M85 130 L145 170 L85 210" fill="none" stroke="#e5b18d" stroke-width="23" stroke-linecap="round"/>
+      <path d="M515 130 L455 170 L515 210" fill="none" stroke="#e5b18d" stroke-width="23" stroke-linecap="round"/>`,
+    paper:`
+      <rect x="110" y="60" width="150" height="195" rx="9" fill="white" stroke="#c4d0cc" stroke-width="5"/>
+      <path d="M145 110 H220 M145 145 H220 M145 180 H205" stroke="#d5dcd8" stroke-width="8"/>
+      <path d="M365 85 L450 115 L475 210 L400 245 L340 190Z" fill="#f6f0dc" stroke="#b7a891" stroke-width="5"/>
+      <path d="M365 85 L415 160 L340 190 M450 115 L415 160 L475 210" stroke="#c5b9a1" stroke-width="5" fill="none"/>`,
+    paint:`
+      <rect x="120" y="55" width="360" height="210" rx="14" fill="#fffaf0"/>
+      <path d="M165 190 Q230 105 300 185 T435 165" stroke="#79a9d3" stroke-width="22" fill="none"/>
+      <rect x="375" y="40" width="65" height="90" rx="9" fill="#d9bd86" transform="rotate(25 400 90)"/>
+      <path d="M410 120 L430 180" stroke="#8c7052" stroke-width="14"/>`,
+    finish:`
+      <rect x="100" y="85" width="400" height="190" rx="12" fill="#fffaf0"/>
+      <path d="M90 105 L300 30 L510 105Z" fill="#e6a16c"/>
+      <text x="300" y="185" font-size="30" text-anchor="middle" fill="#477363">WE DID IT!</text>
+      ${[130,220,380,470].map((x,i)=>`
+        <circle cx="${x}" cy="${50+(i%2)*35}" r="13" fill="${["#e89a9a","#e6c06a","#85b9ce","#a4a0d5"][i]}"/>`).join("")}`
+  };
+
+  return `<svg viewBox="0 0 600 310" role="img" aria-label="Story illustration">
+    <defs><linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="${colors[0]}"/>
+      <stop offset="1" stop-color="${colors[1]}"/>
+    </linearGradient></defs>
+    <rect width="600" height="310" fill="url(#bg)"/>
+    <circle cx="540" cy="35" r="65" fill="#ffffff" opacity=".3"/>
+    ${symbols[type]||symbols.festival}
+  </svg>`;
+}
+
+function stopSpeech(){
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+function startClock(){
+  if(clock) clearInterval(clock);
+  clock=setInterval(()=>{
+    if(timeLeft>0)timeLeft--;
+    const m=String(Math.floor(timeLeft/60)).padStart(2,"0");
+    const s=String(timeLeft%60).padStart(2,"0");
+    $("timer").textContent="⏱ "+m+":"+s;
+    if(timeLeft===0){
+      clearInterval(clock);
+      $("timer").textContent="⏱ Time's up! Keep learning.";
+    }
+  },1000);
+}
+
+function updateProgress(value){
+  $("progress").style.width=Math.max(0,Math.min(100,value))+"%";
+}
+
+function startBook(){
+  pageIndex=0;
+  timeLeft=300;
+  startClock();
+  renderPage();
+  show("reader");
+}
+
+function renderPage(){
+  stopSpeech();
+  const p=pages[pageIndex];
+  $("chapter").textContent=p.title;
+  $("illustration").innerHTML=drawArt(p.art);
+  $("storyText").innerHTML=p.text.replace(
+    /<b>(.*?)<\/b>/g,
+    '<span class="word" tabindex="0" role="button" onclick="showWord(this.textContent)" onkeydown="if(event.key===\'Enter\')showWord(this.textContent)">$1</span>'
+  );
+  $("meaning").classList.add("hidden");
+  $("pagecount").textContent=`Page ${pageIndex+1} of ${pages.length}`;
+  $("nextBtn").textContent=pageIndex===pages.length-1?"Review Words →":"Next →";
+  updateProgress(5+pageIndex/pages.length*55);
+}
+
+function showWord(word){
+  const item=words.find(w=>w[0]===word.toLowerCase());
+  if(!item)return;
+  $("meaning").textContent=`${item[0]} = ${item[1]}`;
+  $("meaning").classList.remove("hidden");
+}
+
+function toggleMeaning(){
+  const el=$("meaning");
+  if(!el.classList.contains("hidden")){
+    el.classList.add("hidden");
+    return;
+  }
+  const p=pages[pageIndex];
+  const found=[...p.text.matchAll(/<b>(.*?)<\/b>/g)];
+  el.textContent=found.length
+    ?found.map(x=>{
+      const w=words.find(v=>v[0]===x[1]);
+      return w?`${w[0]} = ${w[1]}`:"";
+    }).join("   |   ")
+    :"Read the story and look carefully at the picture.";
+  el.classList.remove("hidden");
+}
+
+function speakPage(){
+  if(!("speechSynthesis" in window)){
+    alert("Speech synthesis is not supported in this browser.");
+    return;
+  }
+  stopSpeech();
+  const clean=pages[pageIndex].text.replace(/<[^>]+>/g,"");
+  const utterance=new SpeechSynthesisUtterance(clean);
+  utterance.lang="en-US";
+  utterance.rate=.82;
+  utterance.pitch=1;
+  speechSynthesis.speak(utterance);
+}
+
+function nextPage(){
+  if(pageIndex<pages.length-1){
+    pageIndex++;
+    renderPage();
+  }else{
+    showReview();
+  }
+}
+
+function prevPage(){
+  if(pageIndex>0){
+    pageIndex--;
+    renderPage();
+  }
+}
+
+function showReview(){
+  stopSpeech();
+  show("review");
+  updateProgress(65);
+  $("flashcards").innerHTML="";
+  words.forEach(([en,ko])=>{
+    const b=document.createElement("button");
+    b.className="flashcard";
+    b.textContent=en;
+    let visible=false;
+    b.onclick=()=>{
+      visible=!visible;
+      b.innerHTML=escapeHTML(en)+(visible
+        ?"<span>"+escapeHTML(ko)+"</span>":"");
+    };
+    $("flashcards").appendChild(b);
+  });
+}
+
+function startQuiz(){
+  quizIndex=0;
+  score=0;
+  // Five different verbs per attempt, one-minute practice.
+  quizSet=[...questions].sort(()=>Math.random()-.5).slice(0,5);
+  renderQuestion();
+  show("quiz");
+}
+
+function renderQuestion(){
+  answered=false;
+  $("feedback").textContent="";
+  $("quizNext").classList.add("hidden");
+  const q=quizSet[quizIndex];
+  $("quizNumber").textContent=`QUESTION ${quizIndex+1} / ${quizSet.length}`;
+  $("question").textContent=q[0];
+  $("options").innerHTML="";
+  [...q[2]].sort(()=>Math.random()-.5).forEach(answer=>{
+    const btn=document.createElement("button");
+    btn.className="option";
+    btn.textContent=answer;
+    btn.onclick=()=>checkAnswer(answer,btn);
+    $("options").appendChild(btn);
+  });
+  updateProgress(70+quizIndex/quizSet.length*28);
+}
+
+function checkAnswer(answer,btn){
+  if(answered)return;
+  answered=true;
+  const correct=quizSet[quizIndex][1];
+  if(answer===correct){
+    score++;
+    btn.classList.add("correct");
+    $("feedback").textContent="✓ Correct! Well done.";
+  }else{
+    btn.classList.add("wrong");
+    $("feedback").textContent=`The correct answer is "${correct}".`;
+  }
+  document.querySelectorAll(".option").forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===correct)b.classList.add("correct");
+  });
+  $("quizNext").textContent=quizIndex===quizSet.length-1
+    ?"See Results →":"Next →";
+  $("quizNext").classList.remove("hidden");
+}
+
+function nextQuestion(){
+  quizIndex++;
+  if(quizIndex<quizSet.length){
+    renderQuestion();
+  }else{
+    finish();
+  }
+}
+
+function finish(){
+  stopSpeech();
+  if(clock)clearInterval(clock);
+  show("results");
+  updateProgress(100);
+  $("score").textContent=`${score} / ${quizSet.length} correct`;
+  $("resultMessage").textContent=score===quizSet.length
+    ?"Excellent! You remembered all five action verbs."
+    :"Good work! Review the words and try again.";
+}
+
+function restart(){
+  stopSpeech();
+  if(clock)clearInterval(clock);
+  $("timer").textContent="⏱ 05:00";
+  updateProgress(0);
+  show("welcome");
+}
+
+function reviewAgain(){
+  showReview();
+}
+
+$("coverArt").innerHTML=drawArt("festival");
+</script>
+</body>
+</html>
